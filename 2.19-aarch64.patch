@@ -1,0 +1,51 @@
+--- origsrc/glibc-2.19/sysdeps/unix/sysv/linux/llseek.c	2014-02-07 03:04:38.000000000 -0600
++++ src/glibc-2.19/sysdeps/unix/sysv/linux/llseek.c	2014-05-14 11:50:05.503832500 -0500
+@@ -22,6 +22,8 @@
+ #include <sysdep.h>
+ #include <sys/syscall.h>
+ 
++#if __WORDSIZE != 64 || defined(__NR_llseek)
++
+ /* Seek to OFFSET on FD, starting from WHENCE.  */
+ extern loff_t __llseek (int fd, loff_t offset, int whence);
+ 
+@@ -44,3 +46,5 @@ weak_alias (__llseek, lseek64)
+    provided.  */
+ link_warning (llseek, "\
+ the `llseek' function may be dangerous; use `lseek64' instead.")
++
++#endif /* __WORDSIZE != 64 || __NR_llseek */
+--- origsrc/glibc-2.19/sysdeps/unix/sysv/linux/pread.c	2014-02-07 03:04:38.000000000 -0600
++++ src/glibc-2.19/sysdeps/unix/sysv/linux/pread.c	2014-05-14 11:46:41.296901600 -0500
+@@ -28,9 +28,12 @@
+ 
+ #ifdef __NR_pread64		/* Newer kernels renamed but it's the same.  */
+ # ifdef __NR_pread
+-#  error "__NR_pread and __NR_pread64 both defined???"
++#  if __NR_pread != __NR_pread64
++#   error "Unable to choose between distinct __NR_pread and __NR_pread64"
++#  endif
++# else
++#  define __NR_pread __NR_pread64
+ # endif
+-# define __NR_pread __NR_pread64
+ #endif
+ 
+ 
+--- origsrc/glibc-2.19/sysdeps/unix/sysv/linux/pwrite.c	2014-02-07 03:04:38.000000000 -0600
++++ src/glibc-2.19/sysdeps/unix/sysv/linux/pwrite.c	2014-05-14 11:46:57.022398400 -0500
+@@ -28,9 +28,12 @@
+ 
+ #ifdef __NR_pwrite64		/* Newer kernels renamed but it's the same.  */
+ # ifdef __NR_pwrite
+-#  error "__NR_pwrite and __NR_pwrite64 both defined???"
++#  if __NR_pwrite != __NR_pwrite64
++#   error "Unable to choose between distinct __NR_pwrite and __NR_pwrite64"
++#  endif
++# else
++#  define __NR_pwrite __NR_pwrite64
+ # endif
+-# define __NR_pwrite __NR_pwrite64
+ #endif
+ 
+ 

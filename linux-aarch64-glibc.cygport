@@ -1,0 +1,50 @@
+CROSS_HOST="aarch64-unknown-linux-gnu"
+inherit cross
+
+NAME="linux-aarch64-glibc"
+VERSION=2.19
+RELEASE=1
+CATEGORY="Devel"
+SUMMARY="GNU C library for Linux aarch64 toolchain"
+DESCRIPTION="This package does NOT contain cygwin binaries.
+Instead, it contains Linux ELF binaries.  It is for use with the
+linux-aarch64-gcc cross compiler, and installs into the
+/usr/aarch64-unknown-linux-gnu/sys-root/usr/{lib,include} directories."
+REQUIRES="linux-aarch64-kernel-headers"
+HOMEPAGE="http://www.gnu.org/software/libc/"
+SRC_URI="mirror://gnu/glibc/glibc-${VERSION}.tar.xz"
+SRC_DIR="glibc-${VERSION}"
+PATCH_URI="
+	2.19-cross-rpcgen.patch
+	2.19-aarch64.patch
+"
+
+DIFF_EXCLUDES="manual"
+
+src_compile() {
+	LDFLAGS=
+
+	cd ${B}
+	# prevent cygconf from clobbering this, it's not a generated file
+	mv ${S}/Makefile{,.bak}
+	cygconf ${BOOTSTRAP+libc_cv_ctors_header=yes libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_z_relro=yes}
+	mv ${S}/Makefile{.bak,}
+	cygmake -j1 BUILD_LDFLAGS=-lintl \
+		PARALLELMFLAGS="${MAKEOPTS} ${BOOTSTRAP+libgcc_eh= static-gnulib=-lgcc}"
+}
+
+src_install() {
+	cd ${B}
+	cyginstall install_root=${D} \
+		PARALLELMFLAGS="-j1 ${BOOTSTRAP+libgcc_eh= static-gnulib=-lgcc}"
+
+	cross_desysrootize ${CROSS_LIBDIR}/lib{c,pthread}.so
+
+	rm -f ${D}${CROSS_SYSROOT}/{etc,usr/bin,usr/sbin}/*
+	rm -fr ${D}${CROSS_LIBDIR}/*/
+	rm -fr ${D}${CROSS_PREFIX}/libexec/
+	rm -fr ${D}${CROSS_DATADIR}/{i18n,locale,zoneinfo}/
+	rm -f ${D}${CROSS_SYSROOT}/var/db/Makefile
+}
+
+KEEP_LA_FILES="none"
